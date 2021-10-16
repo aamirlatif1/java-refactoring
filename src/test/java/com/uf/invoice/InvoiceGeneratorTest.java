@@ -38,7 +38,7 @@ class InvoiceGeneratorTest {
         Exception exception = assertThrows(IllegalArgumentException.class, () -> generator. statement(invoice, plays));
 
         //Then
-        Assertions.assertEquals("unknown type: sci-fi", exception.getMessage());
+        assertEquals("unknown type: sci-fi", exception.getMessage());
     }
 
     @Test
@@ -58,7 +58,7 @@ class InvoiceGeneratorTest {
         Exception exception = assertThrows(IllegalArgumentException.class, () -> generator. statement(invoice, plays));
 
         //Then
-        Assertions.assertEquals("unknown type: hamlet2", exception.getMessage());
+        assertEquals("unknown type: hamlet2", exception.getMessage());
     }
 
     @Test
@@ -69,6 +69,7 @@ class InvoiceGeneratorTest {
                 new Performance("as-like", 35),
                 new Performance("othello", 40)
         ));
+
         var plays = Map.of("hamlet", new Play("Hamlet", "tragedy"),
                 "as-like", new Play("As You Like It", "comedy"),
                 "othello", new Play("Othello", "tragedy")
@@ -86,7 +87,7 @@ class InvoiceGeneratorTest {
                 "Amount owed is $1,730.00\n" +
                 "You earned 47 credits\n";
 
-        Assertions.assertEquals(expected, actual);
+        assertEquals(expected, actual);
     }
 
 }
