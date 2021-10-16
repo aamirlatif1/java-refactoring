@@ -13,7 +13,11 @@ import static java.lang.String.format;
 public class InvoiceGenerator {
 
     public String statement(final Invoice invoice, final Map<String, Play> plays) {
-        return new Generator(invoice, plays).invoke();
+        return new Generator(invoice, plays).renderText();
+    }
+
+    private class StatementData {
+        String customer;
     }
 
     private class Generator {
@@ -26,16 +30,22 @@ public class InvoiceGenerator {
             this.plays = plays;
         }
 
-        public String invoke() {
-            var result = format("Statement for %s\n", invoice.customer);
+        public String renderText() {
+            StatementData data = new StatementData();
+            data.customer = invoice.customer;
+            return renderPlainText(data);
+        }
+
+        private String renderPlainText(StatementData data) {
+            StringBuilder result = new StringBuilder(format("Statement for %s\n", data.customer));
             for (Performance perf : invoice.performances) {
                 if (!plays.containsKey(perf.playID))
                     throw new IllegalArgumentException("unknown type: " + perf.playID);
-                result += format(" %s: %s (%d seats)\n", playFor(perf).name, usd(amountFor(perf, playFor(perf))), perf.audience);
+                result.append(format(" %s: %s (%d seats)\n", playFor(perf).name, usd(amountFor(perf, playFor(perf))), perf.audience));
             }
-            result += format("Amount owed is %s\n", usd(totalAmount()));
-            result += format("You earned %d credits\n", totalVolumeCredit());
-            return result;
+            result.append(format("Amount owed is %s\n", usd(totalAmount())));
+            result.append(format("You earned %d credits\n", totalVolumeCredit()));
+            return result.toString();
         }
 
         private double totalAmount() {
