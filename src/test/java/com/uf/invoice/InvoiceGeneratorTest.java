@@ -35,31 +35,31 @@ class InvoiceGeneratorTest {
         );
 
         //When
-        Exception exception = assertThrows(IllegalArgumentException.class, () -> generator. statement(invoice, plays));
+        Exception exception = assertThrows(IllegalArgumentException.class, () -> generator.plainStatement(invoice, plays));
 
         //Then
         assertEquals("unknown type: sci-fi", exception.getMessage());
     }
 
-//    @Test
-//    void playIdNotFoundInPerformances(){
-//        //Given
-//        var invoice = new Invoice("BigCo", List.of(
-//                new Performance("hamlet2", 55),
-//                new Performance("as-like", 35),
-//                new Performance("othello", 40)
-//        ));
-//        var plays = Map.of("hamlet", new Play("Hamlet", "sci-fi"),
-//                "as-like", new Play("As You Like It", "comedy"),
-//                "othello", new Play("Othello", "tragedy")
-//        );
-//
-//        //When
-//        Exception exception = assertThrows(IllegalArgumentException.class, () -> generator. statement(invoice, plays));
-//
-//        //Then
-//        assertEquals("unknown type: hamlet2", exception.getMessage());
-//    }
+    @Test
+    void playIdNotFoundInPerformances(){
+        //Given
+        var invoice = new Invoice("BigCo", List.of(
+                new Performance("hamlet2", 55),
+                new Performance("as-like", 35),
+                new Performance("othello", 40)
+        ));
+        var plays = Map.of("hamlet", new Play("Hamlet", "sci-fi"),
+                "as-like", new Play("As You Like It", "comedy"),
+                "othello", new Play("Othello", "tragedy")
+        );
+
+        //When
+        Exception exception = assertThrows(IllegalArgumentException.class, () -> generator.plainStatement(invoice, plays));
+
+        //Then
+        assertEquals("unknown type: hamlet2", exception.getMessage());
+    }
 
     @Test
     void generateStatementSuccess(){
@@ -76,7 +76,7 @@ class InvoiceGeneratorTest {
         );
 
         //When
-        String actual = generator.statement(invoice, plays);
+        String actual = generator.plainStatement(invoice, plays);
 
         //Then
         String expected =

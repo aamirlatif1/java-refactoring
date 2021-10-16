@@ -15,7 +15,7 @@ import static java.lang.String.format;
 
 public class InvoiceGenerator {
 
-    public String statement(final Invoice invoice, final Map<String, Play> plays) {
+    public String plainStatement(final Invoice invoice, final Map<String, Play> plays) {
         return new Statement(invoice, plays).renderPlain();
     }
 
@@ -56,6 +56,8 @@ public class InvoiceGenerator {
         }
 
         private PerformanceExt enrichPerformance(Performance aPerformance) {
+            if (!plays.containsKey(aPerformance.playID))
+                throw new IllegalArgumentException("unknown type: " + aPerformance.playID);
             PerformanceExt ext = new PerformanceExt();
             Play play = playFor(aPerformance);
             PerformanceCalculator calculator = createCalculator(aPerformance, play);
@@ -80,8 +82,6 @@ public class InvoiceGenerator {
             result.append("<table>\n");
             result.append("<tr><th>play</th><th>seats</th><th>cost</th></tr>\n");
             for (PerformanceExt perf : data.performances) {
-                if (!plays.containsKey(perf.playID))
-                    throw new IllegalArgumentException("unknown type: " + perf.playID);
                 result.append(format(" <tr><td>%s</td><td>%d</td><td>%s</td></tr>\n", playFor(perf).name, perf.audience, usd(perf.amount)));
             }
             result.append("</table>\n");
@@ -93,8 +93,6 @@ public class InvoiceGenerator {
         private String renderPlainText(StatementData data) {
             StringBuilder result = new StringBuilder(format("Statement for %s\n", data.customer));
             for (PerformanceExt perf : data.performances) {
-                if (!plays.containsKey(perf.playID))
-                    throw new IllegalArgumentException("unknown type: " + perf.playID);
                 result.append(format(" %s: %s (%d seats)\n", playFor(perf).name, usd(perf.amount), perf.audience));
             }
             result.append(format("Amount owed is %s\n", usd(data.totalAmount)));
