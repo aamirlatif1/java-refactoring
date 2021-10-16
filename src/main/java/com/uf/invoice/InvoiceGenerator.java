@@ -19,6 +19,7 @@ public class InvoiceGenerator {
     private class Generator {
         private Invoice invoice;
         private Map<String, Play> plays;
+        final NumberFormat currency = NumberFormat.getCurrencyInstance(Locale.US);
 
         public Generator(Invoice invoice, Map<String, Play> plays) {
             this.invoice = invoice;
@@ -29,27 +30,32 @@ public class InvoiceGenerator {
             var totalAmount = 0.0;
             var volumeCredits = 0;
             var result = format("Statement for %s\n", invoice.customer);
-            final var currency = NumberFormat.getCurrencyInstance(Locale.US);
+
 
             for (Performance perf : invoice.performances) {
                 if (!plays.containsKey(perf.playID))
                     throw new IllegalArgumentException("unknown type: " + perf.playID);
 
-                double thisAmount = amountFor(perf, playFor(perf));
-
-                // add volume credits
-                volumeCredits += Math.max(perf.audience - 30, 0);
-                // add extra credit for every ten comedy attendees
-                if ("comedy".equals(playFor(perf).type))
-                    volumeCredits += perf.audience / 5;
+                volumeCredits += volumeCreditFor(perf);
 
                 // print line for this order
-                result += format(" %s: %s (%d seats)\n", playFor(perf).name, currency.format(thisAmount / 100.0), perf.audience);
-                totalAmount += thisAmount;
+                result += format(" %s: %s (%d seats)\n", playFor(perf).name, usd(amountFor(perf, playFor(perf))), perf.audience);
+                totalAmount += amountFor(perf, playFor(perf));
             }
 
-            result += format("Amount owed is %s\n", currency.format(totalAmount / 100.0));
+            result += format("Amount owed is %s\n", usd(totalAmount));
             result += format("You earned %d credits\n", volumeCredits);
+            return result;
+        }
+
+        private String usd(double totalAmount) {
+            return currency.format(totalAmount / 100.0);
+        }
+
+        private int volumeCreditFor(Performance perf) {
+            int result = Math.max(perf.audience - 30, 0);
+            if ("comedy".equals(playFor(perf).type))
+                result += perf.audience / 5;
             return result;
         }
 
