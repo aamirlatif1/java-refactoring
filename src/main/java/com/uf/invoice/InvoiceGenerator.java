@@ -1,11 +1,8 @@
 package com.uf.invoice;
 
-import com.uf.data.Invoice;
-import com.uf.data.Performance;
-import com.uf.data.Play;
+import com.uf.data.*;
 
 import java.text.NumberFormat;
-import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -23,22 +20,9 @@ public class InvoiceGenerator {
         return new Statement(invoice, plays).renderHTML();
     }
 
-    private class StatementData {
-        String customer;
-        double totalAmount;
-        int totalVolumeCredits;
-        List<PerformanceExt> performances;
-    }
-
-    private class PerformanceExt extends Performance {
-        Play play;
-        double amount;
-        int volumeCredit;
-    }
-
-    private class Statement {
-        private Invoice invoice;
-        private Map<String, Play> plays;
+    private static class Statement {
+        private final Invoice invoice;
+        private final Map<String, Play> plays;
         final NumberFormat currency = NumberFormat.getCurrencyInstance(Locale.US);
 
         public Statement(Invoice invoice, Map<String, Play> plays) {
@@ -50,12 +34,12 @@ public class InvoiceGenerator {
             StatementData data = new StatementData();
             data.performances = invoice.performances.stream().map(this::enrichPerformance).collect(Collectors.toList());
             data.customer = invoice.customer;
-            data.totalAmount = totalAmount(data);
-            data.totalVolumeCredits = totalVolumeCredit(data);
+            data.totalAmount = data.totalAmount();
+            data.totalVolumeCredits = data.totalVolumeCredit();
             return data;
         }
 
-        private PerformanceExt enrichPerformance(Performance aPerformance) {
+        public PerformanceExt enrichPerformance(Performance aPerformance) {
             if (!plays.containsKey(aPerformance.playID))
                 throw new IllegalArgumentException("unknown type: " + aPerformance.playID);
             PerformanceExt ext = new PerformanceExt();
@@ -100,25 +84,11 @@ public class InvoiceGenerator {
             return result.toString();
         }
 
-        private double totalAmount(StatementData data) {
-            return data.performances.stream()
-                    .map(p -> p.amount)
-                    .mapToDouble(Double::doubleValue)
-                    .sum();
-        }
-
-        private int totalVolumeCredit(StatementData data) {
-            return data.performances.stream()
-                    .map(p -> p.volumeCredit)
-                    .mapToInt(Integer::intValue)
-                    .sum();
-        }
-
         private String usd(double amount) {
             return currency.format(amount / 100.0);
         }
 
-        private Play playFor(Performance aPerformance) {
+        public Play playFor(Performance aPerformance) {
             return plays.get(aPerformance.playID);
         }
     }
