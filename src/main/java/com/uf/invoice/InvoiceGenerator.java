@@ -10,6 +10,7 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.stream.Collectors;
 
+import static com.uf.invoice.PerformanceCalculator.createCalculator;
 import static java.lang.String.format;
 
 public class InvoiceGenerator {
@@ -32,6 +33,7 @@ public class InvoiceGenerator {
     private class PerformanceExt extends Performance {
         Play play;
         double amount;
+        double volumeCredit;
     }
 
     private class Statement {
@@ -46,19 +48,22 @@ public class InvoiceGenerator {
 
         StatementData getStatementData() {
             StatementData data = new StatementData();
-            data.performances = invoice.performances.stream().map(this::enrich).collect(Collectors.toList());
+            data.performances = invoice.performances.stream().map(this::enrichPerformance).collect(Collectors.toList());
             data.customer = invoice.customer;
             data.totalAmount = totalAmount(data);
-            data.totalVolumeCredits = totalVolumeCredit();
+            data.totalVolumeCredits = totalVolumeCredit(data);
             return data;
         }
 
-        private PerformanceExt enrich(Performance perf) {
+        private PerformanceExt enrichPerformance(Performance aPerformance) {
             PerformanceExt ext = new PerformanceExt();
-            ext.playID = perf.playID;
-            ext.audience = perf.audience;
-            ext.play = playFor(perf);
-            ext.amount = amountFor(perf, ext.play);
+            Play play = playFor(aPerformance);
+            PerformanceCalculator calculator = createCalculator(aPerformance, play);
+            ext.playID = aPerformance.playID;
+            ext.audience = aPerformance.audience;
+            ext.play = play;
+            ext.amount = calculator.amount();
+            ext.volumeCredit = calculator.volumeCredit();
             return ext;
         }
 
@@ -77,7 +82,7 @@ public class InvoiceGenerator {
             for (PerformanceExt perf : data.performances) {
                 if (!plays.containsKey(perf.playID))
                     throw new IllegalArgumentException("unknown type: " + perf.playID);
-                result.append(format(" <tr><td>%s</td><td>%d</td><td>%s</td></tr>\n", playFor(perf).name, perf.audience, usd(amountFor(perf, playFor(perf)))));
+                result.append(format(" <tr><td>%s</td><td>%d</td><td>%s</td></tr>\n", playFor(perf).name, perf.audience, usd(perf.amount)));
             }
             result.append("</table>\n");
             result.append(format("<p>Amount owed is <em>%s</em></p>\n", usd(data.totalAmount)));
@@ -90,7 +95,7 @@ public class InvoiceGenerator {
             for (PerformanceExt perf : data.performances) {
                 if (!plays.containsKey(perf.playID))
                     throw new IllegalArgumentException("unknown type: " + perf.playID);
-                result.append(format(" %s: %s (%d seats)\n", playFor(perf).name, usd(amountFor(perf, playFor(perf))), perf.audience));
+                result.append(format(" %s: %s (%d seats)\n", playFor(perf).name, usd(perf.amount), perf.audience));
             }
             result.append(format("Amount owed is %s\n", usd(data.totalAmount)));
             result.append(format("You earned %d credits\n", data.totalVolumeCredits));
@@ -105,49 +110,20 @@ public class InvoiceGenerator {
             return result;
         }
 
-        private int totalVolumeCredit() {
+        private int totalVolumeCredit(StatementData data) {
             var result = 0;
-            for (Performance perf : invoice.performances) {
-                result += volumeCreditFor(perf);
+            for (PerformanceExt perf : data.performances) {
+                result += perf.volumeCredit;
             }
             return result;
         }
 
-        private String usd(double totalAmount) {
-            return currency.format(totalAmount / 100.0);
+        private String usd(double amount) {
+            return currency.format(amount / 100.0);
         }
 
-        private int volumeCreditFor(Performance perf) {
-            int result = Math.max(perf.audience - 30, 0);
-            if ("comedy".equals(playFor(perf).type))
-                result += perf.audience / 5;
-            return result;
-        }
-
-        private Play playFor(Performance perf) {
-            return plays.get(perf.playID);
-        }
-
-        private double amountFor(Performance perf, Play play) {
-            var thisAmount = 0.0;
-            switch (play.type) {
-                case "tragedy":
-                    thisAmount = 40000.0;
-                    if (perf.audience > 30) {
-                        thisAmount += 1000 * (perf.audience - 30);
-                    }
-                    break;
-                case "comedy":
-                    thisAmount = 30000.0;
-                    if (perf.audience > 20) {
-                        thisAmount += 10000 + 500 * (perf.audience - 20);
-                    }
-                    thisAmount += 300 * perf.audience;
-                    break;
-                default:
-                    throw new IllegalArgumentException("unknown type: " + play.type);
-            }
-            return thisAmount;
+        private Play playFor(Performance aPerformance) {
+            return plays.get(aPerformance.playID);
         }
     }
 }
