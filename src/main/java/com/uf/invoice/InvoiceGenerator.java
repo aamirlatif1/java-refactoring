@@ -27,24 +27,30 @@ public class InvoiceGenerator {
         }
 
         public String invoke() {
-            var totalAmount = 0.0;
-            var volumeCredits = 0;
             var result = format("Statement for %s\n", invoice.customer);
-
-
             for (Performance perf : invoice.performances) {
                 if (!plays.containsKey(perf.playID))
                     throw new IllegalArgumentException("unknown type: " + perf.playID);
-
-                volumeCredits += volumeCreditFor(perf);
-
-                // print line for this order
                 result += format(" %s: %s (%d seats)\n", playFor(perf).name, usd(amountFor(perf, playFor(perf))), perf.audience);
-                totalAmount += amountFor(perf, playFor(perf));
             }
+            result += format("Amount owed is %s\n", usd(totalAmount()));
+            result += format("You earned %d credits\n", totalVolumeCredit());
+            return result;
+        }
 
-            result += format("Amount owed is %s\n", usd(totalAmount));
-            result += format("You earned %d credits\n", volumeCredits);
+        private double totalAmount() {
+            var result = 0.0;
+            for (Performance perf : invoice.performances) {
+                result += amountFor(perf, playFor(perf));
+            }
+            return result;
+        }
+
+        private int totalVolumeCredit() {
+            var result = 0;
+            for (Performance perf : invoice.performances) {
+                result += volumeCreditFor(perf);
+            }
             return result;
         }
 
