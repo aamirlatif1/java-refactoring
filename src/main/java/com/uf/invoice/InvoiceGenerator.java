@@ -33,7 +33,7 @@ public class InvoiceGenerator {
     private class PerformanceExt extends Performance {
         Play play;
         double amount;
-        double volumeCredit;
+        int volumeCredit;
     }
 
     private class Statement {
@@ -101,19 +101,17 @@ public class InvoiceGenerator {
         }
 
         private double totalAmount(StatementData data) {
-            var result = 0.0;
-            for (PerformanceExt perf : data.performances) {
-                result += perf.amount;
-            }
-            return result;
+            return data.performances.stream()
+                    .map(p -> p.amount)
+                    .mapToDouble(Double::doubleValue)
+                    .sum();
         }
 
         private int totalVolumeCredit(StatementData data) {
-            var result = 0;
-            for (PerformanceExt perf : data.performances) {
-                result += perf.volumeCredit;
-            }
-            return result;
+            return data.performances.stream()
+                    .map(p -> p.volumeCredit)
+                    .mapToInt(Integer::intValue)
+                    .sum();
         }
 
         private String usd(double amount) {
